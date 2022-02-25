@@ -24,6 +24,14 @@ const HomePage = (props) => {
   )
 };
 
+// export function getServerSideProps(context){
+//   const{req,res} = context;
+//   return{
+//     props:{
+//       meetups: DUMMY_MEETUPS
+//     }
+//   }
+// }
 export async function getStaticProps(){
   return{
     props:{
