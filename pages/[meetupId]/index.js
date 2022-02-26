@@ -1,44 +1,76 @@
+import { MongoClient, ObjectId } from "mongodb";
 import React from "react";
 import { MeetupDetail } from "../../components/meetups/MeetupDetail";
-function MeetupDetails() {
+import Head from 'next/head'
+
+function MeetupDetails(props) {
   return (
-    <MeetupDetail
-      image="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/M%C3%BCnchen_Blick_vom_Neuen_Rathaus_zu_St_Peter_September_2017.jpg/1280px-M%C3%BCnchen_Blick_vom_Neuen_Rathaus_zu_St_Peter_September_2017.jpg"
-      title="First meetup"
-      address="Some street 5"
-      description="The meet description"
-    />
+    <React.Fragment>
+      <Head>
+        <title>{props.meetupData.title}</title>
+        <meta
+          name="description"
+          content={props.meetupData.description}
+        />
+      </Head>
+      <MeetupDetail
+        image={props.meetupData.image}
+        title={props.meetupData.title}
+        address={props.meetupData.address}
+        description={props.meetupData.description}
+      />
+    </React.Fragment>
   );
 }
 
-export async function getStaticPaths(){
+export async function getStaticPaths() {
+  const client = await MongoClient.connect(
+    "mongodb+srv://fabianes96:x2bDzRrdaq7R8lSf@cluster0.9clfq.mongodb.net/meetups?retryWrites=true&w=majority"
+  );
+  const db = client.db();
+
+  const meetupsCollections = db.collection("meetups");
+
+  const meetups = await meetupsCollections.find({}, { _id: 1 }).toArray();
+
+  client.close();
+
   return {
     fallback: false,
-    paths:[
-      {params:{
-        meetupId: 'm1',
-      }},
-      {params:{
-        meetupId: 'm2',
-      }}
-    ]
-  }
+    paths: meetups.map((meetup) => ({
+      params: { meetupId: meetup._id.toString() },
+    })),
+  };
 }
 
-export async function getStaticProps(context){
+export async function getStaticProps(context) {
   //fetch data for a single meetup
   const meetupId = context.params.meetupId;
-  return{
-    props:{
-      meetupData:{
-        id:meetupId,
-        image:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/M%C3%BCnchen_Blick_vom_Neuen_Rathaus_zu_St_Peter_September_2017.jpg/1280px-M%C3%BCnchen_Blick_vom_Neuen_Rathaus_zu_St_Peter_September_2017.jpg",
-        title:"First meetup",
-        address:"Some street 5",
-        description:"The meet description"
-      }
-    }
-  }
+
+  const client = await MongoClient.connect(
+    "mongodb+srv://fabianes96:x2bDzRrdaq7R8lSf@cluster0.9clfq.mongodb.net/meetups?retryWrites=true&w=majority"
+  );
+  const db = client.db();
+
+  const meetupsCollections = db.collection("meetups");
+
+  const selectedMeetup = await meetupsCollections.findOne({
+    _id: ObjectId(meetupId),
+  });
+
+  client.close();
+
+  return {
+    props: {
+      meetupData: {
+        id: selectedMeetup._id.toString(),
+        title: selectedMeetup.title,
+        address: selectedMeetup.address,
+        image: selectedMeetup.image,
+        description: selectedMeetup.description,
+      },
+    },
+  };
 }
 
 export default MeetupDetails;
